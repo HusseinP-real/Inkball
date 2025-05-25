@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>App.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">INFO1113 inkball</a> &gt; <a href="index.source.html" class="el_package">inkball</a> &gt; <span class="el_source">App.java</span></div><h1>App.java</h1><pre class="source lang-java linenums">package inkball;
+
+import com.google.common.base.MoreObjects;
+import processing.core.PApplet;
+import processing.core.PImage;
+import processing.core.PVector;
+import processing.data.JSONArray;
+import processing.data.JSONObject;
+import processing.event.KeyEvent;
+import processing.event.MouseEvent;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+
+import java.io.*;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+public class App extends PApplet {
+    public static final int CELLSIZE = 32; //8;
+    public static final int CELLHEIGHT = 32;
+    public static final int CELLAVG = 32;
+    public static final int TOPBAR = 64;
+<span class="fc" id="L25">    public static int WIDTH = 32 * 18; //CELLSIZE*BOARD_WIDTH;</span>
+<span class="fc" id="L26">    public static int HEIGHT = 32 * 18 + 64; //BOARD_HEIGHT*CELLSIZE+TOPBAR;</span>
+<span class="fc" id="L27">    public static final int BOARD_WIDTH = WIDTH / CELLSIZE;</span>
+    public static final int BOARD_HEIGHT = 20;
+    public boolean isPaused;
+    public static final int FPS = 30;
+<span class="fc" id="L31">    public static Random random = new Random();</span>
+<span class="fc" id="L32">    public String configPath = &quot;config.json&quot;;</span>
+
+<span class="fc" id="L34">    public List&lt;Walls&gt; walls = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L35">    public List&lt;Holes&gt; holes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L36">    public List&lt;alivePoint&gt; alivePoints = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L37">    public List&lt;Balls&gt; balls = new CopyOnWriteArrayList&lt;&gt;();</span>
+<span class="fc" id="L38">    public List&lt;WaitingBalls&gt; waitingBalls = new CopyOnWriteArrayList&lt;&gt;();</span>
+<span class="fc" id="L39">    public List&lt;Tiles&gt; tiles = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L40">    public List&lt;Tiles&gt; accelerators = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L41">    public List&lt;PVector&gt; smallPointList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L42">    public List&lt;List&lt;PVector&gt;&gt; bigPointList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L43">    public List&lt;Integer&gt; scoreList = Arrays.asList(0, 0, 0);</span>
+<span class="fc" id="L44">    public Map&lt;String, Integer&gt; scoreIncrease = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L45">    public Map&lt;String, Integer&gt; scoreDecrease = new HashMap&lt;&gt;();</span>
+    private int frameCount;
+    private int countdown;
+    private int intervalFrameCount;
+<span class="fc" id="L49">    public int levelNo = 0;</span>
+    public JSONObject level;
+
+
+<span class="fc" id="L53">    public App() {</span>
+<span class="fc" id="L54">        this.configPath = &quot;config.json&quot;;</span>
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * Initialise the setting of the window size.
+     */
+    @Override
+    public void settings() {
+<span class="fc" id="L62">        size(WIDTH, HEIGHT);</span>
+<span class="fc" id="L63">    }</span>
+
+    /**
+     * Load all resources such as images. Initialise the elements such as the player and map elements.
+     */
+    @Override
+    public void setup() {
+<span class="fc" id="L70">        frameRate(FPS);</span>
+        /*try {
+            result = loadImage(URLDecoder.decode(this.getClass().getResource(filename+&quot;.png&quot;).getPath(), StandardCharsets.UTF_8.name()));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }*/
+
+<span class="fc" id="L77">        JSONObject jb = loadJSONObject(configPath);</span>
+<span class="fc" id="L78">        JSONArray ja = jb.getJSONArray(&quot;levels&quot;);</span>
+<span class="fc" id="L79">        level = ja.getJSONObject(levelNo);</span>
+
+<span class="fc" id="L81">        String lo = level.getString(&quot;layout&quot;);</span>
+<span class="fc" id="L82">        String[] linesInJson = loadStrings(lo);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (int i = 0; i &lt; linesInJson.length; i++) { // y</span>
+<span class="fc" id="L84">            String lineInJson = linesInJson[i];</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            for (int j = 0; j &lt; lineInJson.length(); j++) { // x</span>
+<span class="fc" id="L86">                char c = lineInJson.charAt(j);</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">                if (c == 'X') {</span>
+<span class="fc" id="L88">                    int x = j * 32;</span>
+<span class="fc" id="L89">                    int y = i * 32 + 64;</span>
+<span class="fc" id="L90">                    List&lt;PVector&gt; wallEdges = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L91">                    wallEdges.add(new PVector(x, y));</span>
+<span class="fc" id="L92">                    wallEdges.add(new PVector(x, y + 32));</span>
+<span class="fc" id="L93">                    wallEdges.add(new PVector(x + 32, y + 32));</span>
+<span class="fc" id="L94">                    wallEdges.add(new PVector(x + 32, y));</span>
+<span class="fc" id="L95">                    wallEdges.add(new PVector(x, y));</span>
+<span class="fc" id="L96">                    Walls wall = new Walls(x, y , 0, wallEdges);</span>
+<span class="fc" id="L97">                    walls.add(wall);</span>
+<span class="fc" id="L98">                }</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">                else if (c == 'H') {</span>
+<span class="fc" id="L100">                    int x = j;</span>
+<span class="fc" id="L101">                    int y = i;</span>
+                    // see if the int is the holes color
+<span class="pc bpc" id="L103" title="2 of 4 branches missed.">                    if ((j + 1) &lt; lineInJson.length() &amp;&amp; Character.isDigit(lineInJson.charAt(j + 1))) {</span>
+<span class="fc" id="L104">                        int holeColor = lineInJson.charAt(j + 1) - '0';</span>
+<span class="fc" id="L105">                        Holes hole = new Holes(x * 32, (y * 32) + TOPBAR, holeColor);</span>
+<span class="fc" id="L106">                        holes.add(hole);</span>
+<span class="fc" id="L107">                        j++;</span>
+                    }
+<span class="fc" id="L109">                }</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">                else if (c == 'S') {</span>
+<span class="fc" id="L111">                    int x = j;</span>
+<span class="fc" id="L112">                    int y = i;</span>
+<span class="fc" id="L113">                    alivePoint aP = new alivePoint(x * 32, (y * 32) + TOPBAR);</span>
+<span class="fc" id="L114">                    alivePoints.add(aP);</span>
+<span class="fc" id="L115">                }</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">                else if (c == 'B') {</span>
+<span class="fc" id="L117">                    int x = j;</span>
+<span class="fc" id="L118">                    int y = i;</span>
+                    // if the color is the ball color
+<span class="pc bpc" id="L120" title="2 of 4 branches missed.">                    if ((j + 1) &lt; lineInJson.length() &amp;&amp; Character.isDigit(lineInJson.charAt(j + 1))) {</span>
+<span class="fc" id="L121">                        int ballColor = lineInJson.charAt(j + 1) - '0';</span>
+<span class="fc" id="L122">                        Balls ball = new Balls(x * 32, (y * 32) + TOPBAR, ballColor);</span>
+<span class="fc" id="L123">                        balls.add(ball);</span>
+<span class="fc" id="L124">                        Tiles tile = new Tiles(x * 32, (y * 32) + TOPBAR);</span>
+<span class="fc" id="L125">                        Tiles tile1 = new Tiles((x+1) * 32, (y * 32) + TOPBAR);</span>
+<span class="fc" id="L126">                        tiles.add(tile);</span>
+<span class="fc" id="L127">                        tiles.add(tile1);</span>
+<span class="fc" id="L128">                        j++;</span>
+                    }
+<span class="fc" id="L130">                }</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">                else if (c == ' ') {</span>
+<span class="fc" id="L132">                    int x = j;</span>
+<span class="fc" id="L133">                    int y = i;</span>
+<span class="fc" id="L134">                    Tiles tile = new Tiles(x * 32, (y * 32) + TOPBAR);</span>
+<span class="fc" id="L135">                    tiles.add(tile);</span>
+<span class="fc" id="L136">                }</span>
+<span class="pc bpc" id="L137" title="3 of 10 branches missed.">                else if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4') {</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">                    if (j &gt; 0) {</span>
+<span class="fc" id="L139">                        char prevChar = lineInJson.charAt(j - 1);</span>
+<span class="pc bpc" id="L140" title="2 of 4 branches missed.">                        if (prevChar == 'H' || prevChar == 'B') {</span>
+<span class="nc" id="L141">                            continue;</span>
+                        }
+                    }
+<span class="fc" id="L144">                    int x = j * 32;</span>
+<span class="fc" id="L145">                    int y = i * 32 + 64;</span>
+<span class="fc" id="L146">                    int wallColor = c - '0';</span>
+<span class="fc" id="L147">                    List&lt;PVector&gt; wallEdges = new ArrayList&lt;&gt;();</span>
+                    // TODO: add more edges
+<span class="fc" id="L149">                    wallEdges.add(new PVector(x, y));</span>
+<span class="fc" id="L150">                    wallEdges.add(new PVector(x, y + 32));</span>
+<span class="fc" id="L151">                    wallEdges.add(new PVector(x + 32, y + 32));</span>
+<span class="fc" id="L152">                    wallEdges.add(new PVector(x + 32, y));</span>
+<span class="fc" id="L153">                    wallEdges.add(new PVector(x, y));</span>
+<span class="fc" id="L154">                    Walls cwall = new Walls(x, y, wallColor, wallEdges);</span>
+<span class="fc" id="L155">                    walls.add(cwall);</span>
+<span class="fc" id="L156">                }</span>
+<span class="pc bpc" id="L157" title="5 of 8 branches missed.">                else if (c == 'U' || c == 'D' || c == 'L' || c == 'R') {</span>
+<span class="fc" id="L158">                    int x = j;</span>
+<span class="fc" id="L159">                    int y = i;</span>
+<span class="fc" id="L160">                    String direction = &quot;&quot;;</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                    if (c == 'U') {</span>
+<span class="fc" id="L162">                        direction = &quot;UP&quot;;</span>
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">                    } else if (c == 'D') {</span>
+<span class="fc" id="L164">                        direction = &quot;DOWN&quot;;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                    } else if (c == 'L') {</span>
+<span class="nc" id="L166">                        direction = &quot;LEFT&quot;;</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                    } else if (c == 'R') {</span>
+<span class="nc" id="L168">                        direction = &quot;RIGHT&quot;;</span>
+                    }
+<span class="fc" id="L170">                    Direction dir = Direction.valueOf(direction);</span>
+<span class="fc" id="L171">                    Tiles tile = new Tiles(x * 32, (y * 32) + TOPBAR, true, dir);</span>
+<span class="fc" id="L172">                    tiles.add(tile);</span>
+<span class="fc" id="L173">                    accelerators.add(tile);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L178">        JSONArray ballsStrings = level.getJSONArray(&quot;balls&quot;);</span>
+<span class="fc" id="L179">        waitingBalls = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        for (int i = 0; i &lt; ballsStrings.size(); i++) {</span>
+<span class="fc" id="L181">            int color = getColorIntByString(ballsStrings.getString(i));</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            if (!alivePoints.isEmpty()) {</span>
+<span class="fc" id="L183">                int index = random.nextInt(alivePoints.size());</span>
+<span class="fc" id="L184">                alivePoint aP = alivePoints.get(index);</span>
+<span class="fc" id="L185">                waitingBalls.add(new WaitingBalls(aP.x, aP.y, color));</span>
+            }
+
+        }
+
+<span class="fc" id="L190">        JSONObject scoreConfigJson = loadJSONObject(configPath);</span>
+<span class="fc" id="L191">        JSONObject scoreIncreaseJson = scoreConfigJson.getJSONObject(&quot;score_increase_from_hole_capture&quot;);</span>
+<span class="fc" id="L192">        JSONObject scoreDecreaseJson = scoreConfigJson.getJSONObject(&quot;score_decrease_from_wrong_hole&quot;);</span>
+
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        for (Object key : scoreIncreaseJson.keys()) {</span>
+<span class="fc" id="L195">            String K = (String)key;</span>
+<span class="fc" id="L196">            int value = scoreIncreaseJson.getInt(K);</span>
+<span class="fc" id="L197">            scoreIncrease.put(K.toLowerCase(), value);</span>
+<span class="fc" id="L198">        }</span>
+
+        // 解析 score_decrease_from_wrong_hole
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        for (Object key : scoreDecreaseJson.keys()) {</span>
+<span class="fc" id="L202">            String K = (String)key;</span>
+<span class="fc" id="L203">            int value = scoreDecreaseJson.getInt(K);</span>
+<span class="fc" id="L204">            scoreDecrease.put(K.toLowerCase(), value);</span>
+<span class="fc" id="L205">        }</span>
+
+<span class="fc" id="L207">    }</span>
+
+    /**
+     * Receive key pressed signal from the keyboard.
+     */
+    @Override
+    public void keyPressed(KeyEvent event) {
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        if (event.getKey() == ' ') {</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            isPaused = !isPaused;</span>
+<span class="nc bnc" id="L216" title="All 4 branches missed.">        } else if (event.getKey() == 'r' || event.getKey() == 'R') {</span>
+<span class="nc" id="L217">            balls = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L218">            walls = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L219">            tiles = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L220">            holes = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L221">            alivePoints = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L222">            smallPointList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L223">            bigPointList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L224">            frameCount = 0;</span>
+<span class="nc" id="L225">            intervalFrameCount = 0;</span>
+<span class="nc" id="L226">            isPaused = false;</span>
+<span class="nc" id="L227">            scoreList.set(levelNo, 0);</span>
+
+<span class="nc" id="L229">            String lo = level.getString(&quot;layout&quot;);</span>
+<span class="nc" id="L230">            String[] linesInJson = loadStrings(lo);</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            for (int i = 0; i &lt; linesInJson.length; i++) { // y</span>
+<span class="nc" id="L232">                String lineInJson = linesInJson[i];</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">                for (int j = 0; j &lt; lineInJson.length(); j++) { // x</span>
+<span class="nc" id="L234">                    char c = lineInJson.charAt(j);</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">                    if (c == 'X') {</span>
+<span class="nc" id="L236">                        int x = j * 32;</span>
+<span class="nc" id="L237">                        int y = i * 32 + 64;</span>
+<span class="nc" id="L238">                        List&lt;PVector&gt; wallEdges = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L239">                        wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L240">                        wallEdges.add(new PVector(x, y + 32));</span>
+<span class="nc" id="L241">                        wallEdges.add(new PVector(x + 32, y + 32));</span>
+<span class="nc" id="L242">                        wallEdges.add(new PVector(x + 32, y));</span>
+<span class="nc" id="L243">                        wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L244">                        Walls wall = new Walls(x, y , 0, wallEdges);</span>
+<span class="nc" id="L245">                        walls.add(wall);</span>
+                    }
+<span class="nc bnc" id="L247" title="All 2 branches missed.">                    if (c == 'H') {</span>
+<span class="nc" id="L248">                        int x = j;</span>
+<span class="nc" id="L249">                        int y = i;</span>
+                        // see if the int is the holes color
+<span class="nc bnc" id="L251" title="All 4 branches missed.">                        if ((j + 1) &lt; lineInJson.length() &amp;&amp; Character.isDigit(lineInJson.charAt(j + 1))) {</span>
+<span class="nc" id="L252">                            int holeColor = lineInJson.charAt(j + 1) - '0';</span>
+<span class="nc" id="L253">                            Holes hole = new Holes(x * 32, (y * 32) + TOPBAR, holeColor);</span>
+<span class="nc" id="L254">                            holes.add(hole);</span>
+<span class="nc" id="L255">                            j++;</span>
+                        }
+                    }
+<span class="nc bnc" id="L258" title="All 2 branches missed.">                    if (c == 'S') {</span>
+<span class="nc" id="L259">                        int x = j;</span>
+<span class="nc" id="L260">                        int y = i;</span>
+<span class="nc" id="L261">                        alivePoint aP = new alivePoint(x * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L262">                        alivePoints.add(aP);</span>
+                    }
+<span class="nc bnc" id="L264" title="All 2 branches missed.">                    if (c == 'B') {</span>
+<span class="nc" id="L265">                        int x = j;</span>
+<span class="nc" id="L266">                        int y = i;</span>
+                        // if the color is the ball color
+<span class="nc bnc" id="L268" title="All 4 branches missed.">                        if ((j + 1) &lt; lineInJson.length() &amp;&amp; Character.isDigit(lineInJson.charAt(j + 1))) {</span>
+<span class="nc" id="L269">                            int ballColor = lineInJson.charAt(j + 1) - '0';</span>
+<span class="nc" id="L270">                            Balls ball = new Balls(x * 32, (y * 32) + TOPBAR, ballColor);</span>
+<span class="nc" id="L271">                            balls.add(ball);</span>
+<span class="nc" id="L272">                            Tiles tile = new Tiles(x * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L273">                            Tiles tile1 = new Tiles((x+1) * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L274">                            tiles.add(tile);</span>
+<span class="nc" id="L275">                            tiles.add(tile1);</span>
+<span class="nc" id="L276">                            j++;</span>
+                        }
+                    }
+<span class="nc bnc" id="L279" title="All 2 branches missed.">                    if (c == ' ') {</span>
+<span class="nc" id="L280">                        int x = j;</span>
+<span class="nc" id="L281">                        int y = i;</span>
+<span class="nc" id="L282">                        Tiles tile = new Tiles(x * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L283">                        tiles.add(tile);</span>
+                    }
+<span class="nc bnc" id="L285" title="All 10 branches missed.">                    if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4') {</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">                        if (j &gt; 0) {</span>
+<span class="nc" id="L287">                            char prevChar = lineInJson.charAt(j - 1);</span>
+<span class="nc bnc" id="L288" title="All 4 branches missed.">                            if (prevChar != 'H' || prevChar != 'B') {</span>
+<span class="nc" id="L289">                                int x = j * 32;</span>
+<span class="nc" id="L290">                                int y = i * 32 + 64;</span>
+<span class="nc" id="L291">                                int wallColor = c - '0';</span>
+<span class="nc" id="L292">                                List&lt;PVector&gt; wallEdges = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L293">                                wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L294">                                wallEdges.add(new PVector(x, y + 32));</span>
+<span class="nc" id="L295">                                wallEdges.add(new PVector(x + 32, y + 32));</span>
+<span class="nc" id="L296">                                wallEdges.add(new PVector(x + 32, y));</span>
+<span class="nc" id="L297">                                wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L298">                                Walls cwall = new Walls(x, y, wallColor, wallEdges);</span>
+<span class="nc" id="L299">                                walls.add(cwall);</span>
+                            }
+                        }
+                    }
+                }
+            }
+
+<span class="nc" id="L306">            JSONArray ballsStrings = level.getJSONArray(&quot;balls&quot;);</span>
+<span class="nc" id="L307">            waitingBalls = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L308">            Random rd = new Random();</span>
+<span class="nc bnc" id="L309" title="All 2 branches missed.">            for (int i = 0; i &lt; ballsStrings.size(); i++) {</span>
+<span class="nc" id="L310">                int color = getColorIntByString(ballsStrings.getString(i));</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">                if (!alivePoints.isEmpty()) {</span>
+<span class="nc" id="L312">                    int index = rd.nextInt(alivePoints.size());</span>
+<span class="nc" id="L313">                    alivePoint aP = alivePoints.get(index);</span>
+<span class="nc" id="L314">                    waitingBalls.add(new WaitingBalls(aP.x, aP.y, color));</span>
+                }
+
+
+            }
+        }
+<span class="nc" id="L320">    }</span>
+
+    /**
+     * Receive key released signal from the keyboard.
+     */
+    @Override
+    public void keyReleased() {
+
+<span class="nc" id="L328">    }</span>
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        // create a new player-drawn line object
+<span class="nc bnc" id="L333" title="All 2 branches missed.">        if (e.getButton() == RIGHT) {</span>
+<span class="nc" id="L334">            bigPointList.clear();</span>
+        }
+<span class="nc" id="L336">    }</span>
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+<span class="nc" id="L340">        PVector pv = new PVector(e.getX(), e.getY());</span>
+<span class="nc" id="L341">        smallPointList.add(pv);</span>
+
+<span class="nc" id="L343">    }</span>
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+<span class="nc" id="L347">        bigPointList.add(new ArrayList&lt;&gt;(smallPointList));</span>
+        // clear the smallPointList and get ready for the next time
+<span class="nc" id="L349">        smallPointList.clear();</span>
+
+
+<span class="nc" id="L352">    }</span>
+
+    /**
+     * Draw all elements in the game by current frame.
+     */
+    @Override
+    public void draw() {
+<span class="fc" id="L359">        frameCount++;</span>
+<span class="fc" id="L360">        intervalFrameCount++;</span>
+
+<span class="fc" id="L362">        int secondCount = frameCount / FPS;</span>
+<span class="fc" id="L363">        int time = level.getInt(&quot;time&quot;);</span>
+<span class="fc" id="L364">        countdown = time - secondCount;</span>
+
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">        if (countdown &lt;= 0) {</span>
+            // game over
+<span class="nc" id="L368">            text(&quot;=== TIME's UP ===&quot;, 200, 30);</span>
+<span class="nc" id="L369">            return;</span>
+        }
+
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">        if (isPaused){</span>
+<span class="nc" id="L373">            text(&quot;*** Paused ***&quot;, 200, 30);</span>
+<span class="nc" id="L374">            return;</span>
+        }
+
+        // check if all balls are in holes, if so, go to next level
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">        if (allKindBallsInHoles()) {</span>
+<span class="nc" id="L379">            levelNo++;</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">            if (levelNo &gt;= 3) {</span>
+                // game over
+<span class="nc" id="L382">                return;</span>
+            }
+<span class="nc" id="L384">            level = loadJSONObject(configPath).getJSONArray(&quot;levels&quot;).getJSONObject(levelNo);</span>
+<span class="nc" id="L385">            balls = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L386">            walls = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L387">            tiles = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L388">            holes = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L389">            alivePoints = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L390">            smallPointList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L391">            bigPointList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L392">            frameCount = 0;</span>
+
+<span class="nc" id="L394">            String lo = level.getString(&quot;layout&quot;);</span>
+<span class="nc" id="L395">            String[] linesInJson = loadStrings(lo);</span>
+<span class="nc bnc" id="L396" title="All 2 branches missed.">            for (int i = 0; i &lt; linesInJson.length; i++) { // y</span>
+<span class="nc" id="L397">                String lineInJson = linesInJson[i];</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">                for (int j = 0; j &lt; lineInJson.length(); j++) { // x</span>
+<span class="nc" id="L399">                    char c = lineInJson.charAt(j);</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">                    if (c == 'X') {</span>
+<span class="nc" id="L401">                        int x = j * 32;</span>
+<span class="nc" id="L402">                        int y = i * 32 + 64;</span>
+<span class="nc" id="L403">                        List&lt;PVector&gt; wallEdges = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L404">                        wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L405">                        wallEdges.add(new PVector(x, y + 32));</span>
+<span class="nc" id="L406">                        wallEdges.add(new PVector(x + 32, y + 32));</span>
+<span class="nc" id="L407">                        wallEdges.add(new PVector(x + 32, y));</span>
+<span class="nc" id="L408">                        wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L409">                        Walls wall = new Walls(x, y , 0, wallEdges);</span>
+<span class="nc" id="L410">                        walls.add(wall);</span>
+                    }
+<span class="nc bnc" id="L412" title="All 2 branches missed.">                    if (c == 'H') {</span>
+<span class="nc" id="L413">                        int x = j;</span>
+<span class="nc" id="L414">                        int y = i;</span>
+                        // see if the int is the holes color
+<span class="nc bnc" id="L416" title="All 4 branches missed.">                        if ((j + 1) &lt; lineInJson.length() &amp;&amp; Character.isDigit(lineInJson.charAt(j + 1))) {</span>
+<span class="nc" id="L417">                            int holeColor = lineInJson.charAt(j + 1) - '0';</span>
+<span class="nc" id="L418">                            Holes hole = new Holes(x * 32, (y * 32) + TOPBAR, holeColor);</span>
+<span class="nc" id="L419">                            holes.add(hole);</span>
+<span class="nc" id="L420">                            j++;</span>
+                        }
+                    }
+<span class="nc bnc" id="L423" title="All 2 branches missed.">                    if (c == 'S') {</span>
+<span class="nc" id="L424">                        int x = j;</span>
+<span class="nc" id="L425">                        int y = i;</span>
+<span class="nc" id="L426">                        alivePoint aP = new alivePoint(x * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L427">                        alivePoints.add(aP);</span>
+                    }
+<span class="nc bnc" id="L429" title="All 2 branches missed.">                    if (c == 'B') {</span>
+<span class="nc" id="L430">                        int x = j;</span>
+<span class="nc" id="L431">                        int y = i;</span>
+                        // if the color is the ball color
+<span class="nc bnc" id="L433" title="All 4 branches missed.">                        if ((j + 1) &lt; lineInJson.length() &amp;&amp; Character.isDigit(lineInJson.charAt(j + 1))) {</span>
+<span class="nc" id="L434">                            int ballColor = lineInJson.charAt(j + 1) - '0';</span>
+<span class="nc" id="L435">                            Balls ball = new Balls(x * 32, (y * 32) + TOPBAR, ballColor);</span>
+<span class="nc" id="L436">                            balls.add(ball);</span>
+<span class="nc" id="L437">                            Tiles tile = new Tiles(x * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L438">                            Tiles tile1 = new Tiles((x+1) * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L439">                            tiles.add(tile);</span>
+<span class="nc" id="L440">                            tiles.add(tile1);</span>
+<span class="nc" id="L441">                            j++;</span>
+                        }
+                    }
+<span class="nc bnc" id="L444" title="All 2 branches missed.">                    if (c == ' ') {</span>
+<span class="nc" id="L445">                        int x = j;</span>
+<span class="nc" id="L446">                        int y = i;</span>
+<span class="nc" id="L447">                        Tiles tile = new Tiles(x * 32, (y * 32) + TOPBAR);</span>
+<span class="nc" id="L448">                        tiles.add(tile);</span>
+                    }
+<span class="nc bnc" id="L450" title="All 10 branches missed.">                    if (c == '0' || c == '1' || c == '2' || c == '3' || c == '4') {</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">                        if (j &gt; 0) {</span>
+<span class="nc" id="L452">                            char prevChar = lineInJson.charAt(j - 1);</span>
+<span class="nc bnc" id="L453" title="All 4 branches missed.">                            if (prevChar != 'H' || prevChar != 'B') {</span>
+<span class="nc" id="L454">                                int x = j * 32;</span>
+<span class="nc" id="L455">                                int y = i * 32 + 64;</span>
+<span class="nc" id="L456">                                int wallColor = c - '0';</span>
+<span class="nc" id="L457">                                List&lt;PVector&gt; wallEdges = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L458">                                wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L459">                                wallEdges.add(new PVector(x, y + 32));</span>
+<span class="nc" id="L460">                                wallEdges.add(new PVector(x + 32, y + 32));</span>
+<span class="nc" id="L461">                                wallEdges.add(new PVector(x + 32, y));</span>
+<span class="nc" id="L462">                                wallEdges.add(new PVector(x, y));</span>
+<span class="nc" id="L463">                                Walls cwall = new Walls(x, y, wallColor, wallEdges);</span>
+<span class="nc" id="L464">                                walls.add(cwall);</span>
+                            }
+                        }
+                    }
+                }
+            }
+
+<span class="nc" id="L471">            JSONArray ballsStrings = level.getJSONArray(&quot;balls&quot;);</span>
+<span class="nc" id="L472">            waitingBalls = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L473">            Random rd = new Random();</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">            for (int i = 0; i &lt; ballsStrings.size(); i++) {</span>
+<span class="nc" id="L475">                int color = getColorIntByString(ballsStrings.getString(i));</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">                if (!alivePoints.isEmpty()) {</span>
+<span class="nc" id="L477">                    int index = rd.nextInt(alivePoints.size());</span>
+<span class="nc" id="L478">                    alivePoint aP = alivePoints.get(index);</span>
+<span class="nc" id="L479">                    waitingBalls.add(new WaitingBalls(aP.x, aP.y, color));</span>
+                }
+            }
+        }
+
+
+        //draw tiles
+<span class="pc bpc" id="L486" title="1 of 2 branches missed.">        for (Tiles tile : tiles) {</span>
+<span class="fc" id="L487">            tile.drawTile(this);</span>
+<span class="fc" id="L488">        }</span>
+
+
+        //draw walls
+<span class="nc bnc" id="L492" title="All 2 branches missed.">        for (Walls wall : walls) {</span>
+<span class="nc" id="L493">            wall.drawWalls(this);</span>
+<span class="nc" id="L494">        }</span>
+
+        //draw holes
+<span class="nc bnc" id="L497" title="All 2 branches missed.">        for (Holes hole : holes) {</span>
+<span class="nc" id="L498">            hole.drawHoles(this);</span>
+<span class="nc" id="L499">        }</span>
+
+        //draw alive points
+<span class="nc bnc" id="L502" title="All 2 branches missed.">        for (alivePoint aP : alivePoints) {</span>
+<span class="nc" id="L503">            aP.drawAlivePoint(this);</span>
+<span class="nc" id="L504">        }</span>
+
+        //draw balls
+<span class="nc bnc" id="L507" title="All 2 branches missed.">        for (Balls ball: balls) {</span>
+<span class="nc" id="L508">            ball.drawBalls(this);</span>
+<span class="nc" id="L509">        }</span>
+
+<span class="nc" id="L511">        drawTopBar();</span>
+
+<span class="nc" id="L513">        drawMouse();</span>
+<span class="nc" id="L514">    }</span>
+
+    public void drawTopBar() {
+
+        // draw rect
+<span class="nc" id="L519">        noStroke();</span>
+<span class="nc" id="L520">        fill(185);</span>
+<span class="nc" id="L521">        rect(0,0, WIDTH, TOPBAR);</span>
+
+        // score
+<span class="nc" id="L524">        fill(0);</span>
+<span class="nc" id="L525">        textSize(20);</span>
+<span class="nc" id="L526">        text(&quot;Score: &quot; + getTotalScore(), App.WIDTH - 120, 30);</span>
+
+        // time
+<span class="nc" id="L529">        text(&quot;Time: &quot; + countdown, App.WIDTH - 120, 55);</span>
+
+        // draw spawn balls
+<span class="nc" id="L532">        fill(0,0,0);</span>
+<span class="nc" id="L533">        rect(8,8, 160, 32);</span>
+<span class="nc bnc" id="L534" title="All 4 branches missed.">        for (int i = 0; i &lt; waitingBalls.size() &amp;&amp; i &lt; 5; i++) {</span>
+<span class="nc" id="L535">            WaitingBalls waitingBall = waitingBalls.get(i);</span>
+<span class="nc" id="L536">            image(loadImage(&quot;inkball/ball&quot; + waitingBall.getColor() + &quot;.png&quot;), 12 + i * 32, 12, 25, 25);</span>
+        }
+
+
+        // draw interval countdown
+<span class="nc" id="L541">        int intervalSecondTime = level.getInt(&quot;spawn_interval&quot;);</span>
+<span class="nc" id="L542">        int intervalFrameTime = intervalSecondTime * FPS;</span>
+<span class="nc" id="L543">        int remainingFrameToSpawnWaitingBall = intervalFrameTime - (intervalFrameCount % intervalFrameTime);</span>
+<span class="nc" id="L544">        float remainingSecondToSpawnWaitingBall = (float)remainingFrameToSpawnWaitingBall / FPS;</span>
+
+<span class="nc bnc" id="L546" title="All 2 branches missed.">        if (remainingSecondToSpawnWaitingBall &lt;= 0.05) {</span>
+<span class="nc bnc" id="L547" title="All 2 branches missed.">            if (!waitingBalls.isEmpty()) {</span>
+<span class="nc" id="L548">                WaitingBalls waitingBall = waitingBalls.get(0);</span>
+<span class="nc" id="L549">                Balls ball = new Balls(waitingBall.getX(), waitingBall.getY(), waitingBall.getColor());</span>
+<span class="nc" id="L550">                balls.add(ball);</span>
+<span class="nc" id="L551">                waitingBalls.remove(0);</span>
+            }
+        }
+
+<span class="nc" id="L555">        textSize(20);</span>
+<span class="nc" id="L556">        fill(0);</span>
+        // format string
+<span class="nc" id="L558">        text(String.format(&quot;%.1f&quot;, remainingSecondToSpawnWaitingBall) + &quot;s&quot;, 180, 30);</span>
+<span class="nc" id="L559">    }</span>
+
+    public void drawMouse() {
+<span class="nc bnc" id="L562" title="All 2 branches missed.">        for (int i = 0; i &lt; smallPointList.size() - 1; i++) {</span>
+<span class="nc" id="L563">            PVector p = smallPointList.get(i);</span>
+<span class="nc" id="L564">            PVector p1 = smallPointList.get(i + 1);</span>
+<span class="nc" id="L565">            stroke(0);</span>
+<span class="nc" id="L566">            strokeWeight(10);</span>
+<span class="nc" id="L567">            line(p.x, p.y, p1.x, p1.y);</span>
+        }
+<span class="nc bnc" id="L569" title="All 2 branches missed.">        for (int j = 0; j &lt; bigPointList.size(); j++) {</span>
+<span class="nc" id="L570">            List&lt;PVector&gt; smallPointList = bigPointList.get(j);</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">            for (int i = 0; i &lt; smallPointList.size() - 1; i++) {</span>
+<span class="nc" id="L572">                PVector p = smallPointList.get(i);</span>
+<span class="nc" id="L573">                PVector p1 = smallPointList.get(i + 1);</span>
+<span class="nc" id="L574">                stroke(0);</span>
+<span class="nc" id="L575">                strokeWeight(10);</span>
+<span class="nc" id="L576">                line(p.x, p.y, p1.x, p1.y);</span>
+            }
+        }
+<span class="nc" id="L579">    }</span>
+
+
+    public int getColorIntByString(String color) {
+<span class="pc bpc" id="L583" title="1 of 6 branches missed.">        switch (color) {</span>
+            case &quot;grey&quot;:
+<span class="fc" id="L585">                return 0;</span>
+            case &quot;orange&quot;:
+<span class="fc" id="L587">                return 1;</span>
+            case &quot;blue&quot;:
+<span class="fc" id="L589">                return 2;</span>
+            case &quot;green&quot;:
+<span class="fc" id="L591">                return 3;</span>
+            case &quot;red&quot;:
+<span class="nc" id="L593">                return 4;</span>
+        }
+<span class="fc" id="L595">        return 0;</span>
+    }
+
+    public boolean allKindBallsInHoles() {
+<span class="pc bpc" id="L599" title="3 of 4 branches missed.">        return balls.isEmpty() &amp;&amp; waitingBalls.isEmpty();</span>
+    }
+
+    public int getTotalScore() {
+<span class="nc" id="L603">        int totalScore = 0;</span>
+<span class="nc bnc" id="L604" title="All 2 branches missed.">        for (int i = 0; i &lt; scoreList.size(); i++) {</span>
+<span class="nc" id="L605">            totalScore += scoreList.get(i);</span>
+        }
+<span class="nc" id="L607">        return totalScore;</span>
+    }
+
+
+    public static void main(String[] args) {
+<span class="nc" id="L612">        PApplet.main(&quot;inkball.App&quot;);</span>
+<span class="nc" id="L613">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

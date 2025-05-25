@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Balls.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">INFO1113 inkball</a> &gt; <a href="index.source.html" class="el_package">inkball</a> &gt; <span class="el_source">Balls.java</span></div><h1>Balls.java</h1><pre class="source lang-java linenums">package inkball;
+
+import processing.core.PVector;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+public class Balls {
+    protected float x;
+    protected float y;
+
+    protected int color;
+    protected float speed_x;
+    protected float speed_y;
+    protected int radius;
+
+
+<span class="fc" id="L20">    public Balls(float x, float y, int ballColor) {</span>
+<span class="fc" id="L21">        this.x = x;</span>
+<span class="fc" id="L22">        this.y = y;</span>
+<span class="fc" id="L23">        this.color = ballColor;</span>
+<span class="fc" id="L24">        this.radius = 12;</span>
+<span class="fc" id="L25">        Random_V();</span>
+<span class="fc" id="L26">    }</span>
+
+    public void setColor(int color) {
+<span class="nc" id="L29">        this.color = color;</span>
+<span class="nc" id="L30">    }</span>
+
+    public void setSpeed_x(float speed_x) {
+<span class="nc" id="L33">        this.speed_x = speed_x;</span>
+<span class="nc" id="L34">    }</span>
+
+    public void setSpeed_y(float speed_y) {
+<span class="nc" id="L37">        this.speed_y = speed_y;</span>
+<span class="nc" id="L38">    }</span>
+
+    public int getRadius() {
+<span class="nc" id="L41">        return radius;</span>
+    }
+
+    public void setRadius(int radius) {
+<span class="nc" id="L45">        this.radius = radius;</span>
+<span class="nc" id="L46">    }</span>
+
+    public void setX(int x) {
+<span class="nc" id="L49">        this.x = x;</span>
+<span class="nc" id="L50">    }</span>
+
+    public void setY(int y) {
+<span class="nc" id="L53">        this.y = y;</span>
+<span class="nc" id="L54">    }</span>
+
+    public float getSpeed_x() {
+<span class="nc" id="L57">        return speed_x;</span>
+    }
+
+    public float getSpeed_y() {
+<span class="nc" id="L61">        return speed_y;</span>
+    }
+
+    public float getX() {
+<span class="nc" id="L65">        return x;</span>
+    }
+
+    public int getColor() {
+<span class="nc" id="L69">        return color;</span>
+    }
+
+    public float getY() {
+<span class="nc" id="L73">        return y;</span>
+    }
+
+    public void Random_V() {
+<span class="fc" id="L77">        Random rd = new Random();</span>
+<span class="fc" id="L78">        this.speed_x = getRandom_V(rd);</span>
+<span class="fc" id="L79">        this.speed_y = getRandom_V(rd);</span>
+<span class="fc" id="L80">    }</span>
+
+    private int getRandom_V(Random rd) {
+<span class="fc" id="L83">        int[] possible_V = {-2, 2};</span>
+<span class="fc" id="L84">        int i = rd.nextInt(possible_V.length);</span>
+<span class="fc" id="L85">        return possible_V[i];</span>
+    }
+
+    public PVector getBallCenter() {
+<span class="nc" id="L89">        float centerX = this.x + this.radius;</span>
+<span class="nc" id="L90">        float centerY = this.y + this.radius;</span>
+<span class="nc" id="L91">        return new PVector(centerX, centerY);</span>
+    }
+
+    public void drawBalls(App app) {
+<span class="nc" id="L95">        boolean flag = false;</span>
+<span class="nc" id="L96">        int ballColor = this.getColor();</span>
+<span class="nc" id="L97">        PVector position = getBallCenter();</span>
+
+<span class="nc" id="L99">        PVector V = new PVector(this.speed_x, this.speed_y);</span>
+<span class="nc" id="L100">        int r = this.getRadius();</span>
+
+        // touch with lines
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        for (int j = 0; j &lt; app.bigPointList.size(); j++) {</span>
+<span class="nc" id="L104">            List&lt;PVector&gt; smallPointList = app.bigPointList.get(j);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">            for (int k = 0; k &lt; smallPointList.size() - 1; k++) {</span>
+<span class="nc" id="L106">                PVector p = smallPointList.get(k);</span>
+<span class="nc" id="L107">                PVector p1 = smallPointList.get(k + 1);</span>
+
+                // detect if the line touch the ball
+<span class="nc" id="L110">                PVector nextPosition = PVector.add(position, V);</span>
+<span class="nc" id="L111">                float disToP = PVector.dist(nextPosition, p);</span>
+<span class="nc" id="L112">                float disToP1 = PVector.dist(nextPosition, p1);</span>
+<span class="nc" id="L113">                float disLine = PVector.dist(p, p1);</span>
+<span class="nc" id="L114">                PVector midPoint = PVector.add(p, p1).div(2);</span>
+
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (disToP + disToP1 &lt; disLine + r) {</span>
+                    // get nearest normal
+<span class="nc" id="L118">                    PVector n1 = new PVector(p.y - p1.y, p1.x - p.x);</span>
+<span class="nc" id="L119">                    PVector n2 = new PVector(p1.y-p.y, p.x-p1.x);</span>
+<span class="nc" id="L120">                    PVector nPoint1 = PVector.add(midPoint, n1);</span>
+<span class="nc" id="L121">                    PVector nPoint2 = PVector.add(midPoint, n2);</span>
+
+<span class="nc" id="L123">                    float dist1 = PVector.dist(position, nPoint1);</span>
+<span class="nc" id="L124">                    float dist2 = PVector.dist(position, nPoint2);</span>
+                    //PVector normal = dist1 &lt; dist2 ? n1 : n2;
+                    PVector normal;
+<span class="nc bnc" id="L127" title="All 2 branches missed.">                    if (dist1 &lt; dist2) {</span>
+<span class="nc" id="L128">                        normal = n1.normalize();</span>
+                    } else {
+<span class="nc" id="L130">                        normal = n2.normalize();</span>
+                    }
+
+<span class="nc" id="L133">                    float dotProduct = V.dot(normal);</span>
+<span class="nc" id="L134">                    PVector newVelocity = PVector.sub(V, PVector.mult(normal, 2 * dotProduct));</span>
+<span class="nc" id="L135">                    this.setSpeed_x(newVelocity.x);</span>
+<span class="nc" id="L136">                    this.setSpeed_y(newVelocity.y);</span>
+
+<span class="nc" id="L138">                    app.bigPointList.remove(j);</span>
+<span class="nc" id="L139">                    break;</span>
+                }
+            }
+        }
+
+        // touch the walls
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        for (Walls wall: app.walls) {</span>
+<span class="nc" id="L146">            List&lt;PVector&gt; wallEdges = wall.getWallEdges();</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            for (int k = 0; k &lt; wallEdges.size() - 1; k++) {</span>
+<span class="nc" id="L148">                PVector p = wallEdges.get(k);</span>
+<span class="nc" id="L149">                PVector p1 = wallEdges.get(k + 1);</span>
+
+                // detect if the line touch the ball
+<span class="nc" id="L152">                PVector nextPosition = PVector.add(position, V);</span>
+<span class="nc" id="L153">                float disToP = PVector.dist(nextPosition, p);</span>
+<span class="nc" id="L154">                float disToP1 = PVector.dist(nextPosition, p1);</span>
+<span class="nc" id="L155">                float disLine = PVector.dist(p, p1);</span>
+<span class="nc" id="L156">                PVector midPoint = PVector.add(p, p1).div(2);</span>
+
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                if (disToP + disToP1 &lt; disLine + r) {</span>
+                    // get nearest normal
+<span class="nc" id="L160">                    PVector n1 = new PVector(p.y - p1.y, p1.x - p.x);</span>
+<span class="nc" id="L161">                    PVector n2 = new PVector(p1.y-p.y, p.x-p1.x);</span>
+<span class="nc" id="L162">                    PVector nPoint1 = PVector.add(midPoint, n1);</span>
+<span class="nc" id="L163">                    PVector nPoint2 = PVector.add(midPoint, n2);</span>
+
+<span class="nc" id="L165">                    float dist1 = PVector.dist(position, nPoint1);</span>
+<span class="nc" id="L166">                    float dist2 = PVector.dist(position, nPoint2);</span>
+                    //PVector normal = dist1 &lt; dist2 ? n1 : n2;
+                    PVector normal;
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                    if (dist1 &lt; dist2) {</span>
+<span class="nc" id="L170">                        normal = n1.normalize();</span>
+                    } else {
+<span class="nc" id="L172">                        normal = n2.normalize();</span>
+                    }
+
+<span class="nc" id="L175">                    float dotProduct = V.dot(normal);</span>
+<span class="nc" id="L176">                    PVector newVelocity = PVector.sub(V, PVector.mult(normal, 2 * dotProduct));</span>
+<span class="nc" id="L177">                    this.setSpeed_x(newVelocity.x);</span>
+<span class="nc" id="L178">                    this.setSpeed_y(newVelocity.y);</span>
+
+<span class="nc" id="L180">                    int wallColor = wall.getColor();</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">                    if (wallColor != 0) this.color = wallColor;</span>
+                }
+            }
+<span class="nc" id="L184">        }</span>
+
+        // judge if ball is in the hole
+<span class="nc" id="L187">        PVector ballCenter = this.getBallCenter();</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        for (Holes hole : app.holes) {</span>
+<span class="nc" id="L189">            PVector holeCenter = hole.getHoleCentrePosition();</span>
+<span class="nc" id="L190">            PVector distanceToHole = PVector.sub(holeCenter, ballCenter); //distance between ball and hole</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            if (distanceToHole.mag() &lt;= 40) {</span>
+
+<span class="nc" id="L193">                PVector newSpeed = PVector.add(new PVector(this.speed_x, this.speed_y), PVector.mult(distanceToHole, 0.1f));</span>
+<span class="nc" id="L194">                this.setSpeed_x(newSpeed.x);</span>
+<span class="nc" id="L195">                this.setSpeed_y(newSpeed.y);</span>
+                // change the radius of the ball based on how close it is to the hole
+<span class="nc bnc" id="L197" title="All 2 branches missed.">                if (this.radius &gt;= 4) this.radius -= 2;</span>
+
+<span class="nc bnc" id="L199" title="All 2 branches missed.">                if (distanceToHole.mag() &lt;= 24) {</span>
+<span class="nc" id="L200">                    String ballColorStr = getColorNameByInt(this.color).toLowerCase();</span>
+<span class="nc" id="L201">                    String holeColorStr = getColorNameByInt(hole.getColor()).toLowerCase();</span>
+<span class="nc bnc" id="L202" title="All 4 branches missed.">                    if (ballColorStr.equals(holeColorStr) || hole.getColor() == 0) {</span>
+                        // if colors of ball is match to the hole increase the score
+<span class="nc" id="L204">                        int scoreIncrease = (int) (app.scoreIncrease.get(ballColorStr)</span>
+<span class="nc" id="L205">                                * app.level.getFloat(&quot;score_increase_from_hole_capture_modifier&quot;));</span>
+<span class="nc" id="L206">                        app.scoreList.set(app.levelNo, app.scoreList.get(app.levelNo) + scoreIncrease);</span>
+<span class="nc" id="L207">                        app.balls.remove(this);</span>
+
+<span class="nc" id="L209">                    } else {</span>
+                        // if colors of ball is not match to the hole decrease the score
+<span class="nc" id="L211">                        int scoreIncrease = (int) (app.scoreDecrease.get(ballColorStr)</span>
+<span class="nc" id="L212">                                * app.level.getFloat(&quot;score_decrease_from_wrong_hole_modifier&quot;));</span>
+<span class="nc" id="L213">                        app.scoreList.set(app.levelNo, app.scoreList.get(app.levelNo) - scoreIncrease);</span>
+<span class="nc" id="L214">                        int index = App.random.nextInt(app.alivePoints.size());</span>
+<span class="nc" id="L215">                        alivePoint aP = app.alivePoints.get(index);</span>
+<span class="nc" id="L216">                        app.waitingBalls.add(new WaitingBalls(aP.getX(), aP.getY(), this.color));</span>
+<span class="nc" id="L217">                        app.balls.remove(this);</span>
+                    }
+<span class="nc" id="L219">                    return;</span>
+                }
+                break;
+            }
+
+<span class="nc" id="L224">            this.radius = 12;</span>
+<span class="nc" id="L225">        }</span>
+
+        // judge if ball is in the accelerator
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        for (Tiles accelerator : app.accelerators) {</span>
+<span class="nc" id="L229">            PVector acceleratorCenter = new PVector(accelerator.getX() + 16, accelerator.getY() + 16);</span>
+<span class="nc" id="L230">            float distanceToAccelerator = PVector.dist(ballCenter, acceleratorCenter); //distance between ball and accelerator</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">            if (distanceToAccelerator &lt;= 32) {</span>
+<span class="nc bnc" id="L232" title="All 5 branches missed.">                switch (accelerator.getDirection()) {</span>
+                    case UP:
+<span class="nc" id="L234">                        this.setSpeed_y(this.speed_y - 2);</span>
+<span class="nc" id="L235">                        break;</span>
+                    case DOWN:
+<span class="nc" id="L237">                        this.setSpeed_y(this.speed_y + 2);</span>
+<span class="nc" id="L238">                        break;</span>
+                    case LEFT:
+<span class="nc" id="L240">                        this.setSpeed_x(this.speed_x - 2);</span>
+<span class="nc" id="L241">                        break;</span>
+                    case RIGHT:
+<span class="nc" id="L243">                        this.setSpeed_x(this.speed_x + 2);</span>
+<span class="nc" id="L244">                        break;</span>
+                    default:
+                        break;
+                }
+            }
+<span class="nc" id="L249">        }</span>
+
+        // get new position
+<span class="nc" id="L252">        this.x += (int) this.speed_x;</span>
+<span class="nc" id="L253">        this.y += (int) this.speed_y;</span>
+
+<span class="nc" id="L255">        String ballPath = &quot;inkball/ball&quot; + ballColor + &quot;.png&quot;;</span>
+<span class="nc" id="L256">        app.image(app.loadImage(ballPath), x, y, radius*2, radius*2);</span>
+<span class="nc" id="L257">    }</span>
+
+    public static String getColorNameByInt(int colorInt) {
+<span class="nc bnc" id="L260" title="All 6 branches missed.">        switch (colorInt) {</span>
+<span class="nc" id="L261">            case 0: return &quot;grey&quot;;</span>
+<span class="nc" id="L262">            case 1: return &quot;orange&quot;;</span>
+<span class="nc" id="L263">            case 2: return &quot;blue&quot;;</span>
+<span class="nc" id="L264">            case 3: return &quot;green&quot;;</span>
+<span class="nc" id="L265">            case 4: return &quot;yellow&quot;;</span>
+<span class="nc" id="L266">            default: return &quot;unknown&quot;;</span>
+        }
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
