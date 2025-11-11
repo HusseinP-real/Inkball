@@ -34,6 +34,11 @@ public class App extends PApplet {
     public static Random random = new Random();
     public String configPath = "config.json";
 
+    // 游戏状态管理
+    private GameState currentState = GameState.MENU;
+    private MainMenuScreen mainMenu;
+    private LevelSelectScreen levelSelect;
+
     public List<Walls> walls = new ArrayList<>();
     public List<Holes> holes = new ArrayList<>();
     public List<alivePoint> alivePoints = new ArrayList<>();
@@ -72,12 +77,21 @@ public class App extends PApplet {
     @Override
     public void setup() {
         frameRate(FPS);
-        /*try {
-            result = loadImage(URLDecoder.decode(this.getClass().getResource(filename+".png").getPath(), StandardCharsets.UTF_8.name()));
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }*/
-
+        
+        // 初始化界面对象
+        mainMenu = new MainMenuScreen(this);
+        levelSelect = new LevelSelectScreen(this);
+        
+        // 只有在游戏状态为PLAYING时才加载关卡
+        if (currentState == GameState.PLAYING) {
+            loadLevel();
+        }
+    }
+    
+    /**
+     * 加载关卡数据
+     */
+    private void loadLevel() {
         JSONObject jb = loadJSONObject(configPath);
         JSONArray ja = jb.getJSONArray("levels");
         level = ja.getJSONObject(levelNo);
@@ -214,6 +228,26 @@ public class App extends PApplet {
      */
     @Override
     public void keyPressed(KeyEvent event) {
+        switch (currentState) {
+            case MENU:
+                mainMenu.keyPressed(event.getKeyCode());
+                break;
+            case LEVEL_SELECT:
+                levelSelect.keyPressed(event.getKeyCode());
+                break;
+            case PLAYING:
+                handleGameKeyPressed(event);
+                break;
+            case GAME_OVER:
+                handleGameOverKeyPressed(event);
+                break;
+        }
+    }
+    
+    /**
+     * 处理游戏中的按键事件
+     */
+    private void handleGameKeyPressed(KeyEvent event) {
         if (event.getKey() == ' ') {
             isPaused = !isPaused;
         } else if (event.getKey() == 'r' || event.getKey() == 'R') {
@@ -345,6 +379,22 @@ public class App extends PApplet {
 
 
             }
+        } else if (event.getKey() == 'm' || event.getKey() == 'M') {
+            // 返回主菜单
+            currentState = GameState.MENU;
+        }
+    }
+    
+    /**
+     * 处理游戏结束状态的按键事件
+     */
+    private void handleGameOverKeyPressed(KeyEvent event) {
+        if (event.getKey() == 'r' || event.getKey() == 'R') {
+            // 重新开始游戏
+            startLevel(0);
+        } else if (event.getKey() == 'm' || event.getKey() == 'M') {
+            // 返回主菜单
+            currentState = GameState.MENU;
         }
     }
 
@@ -364,6 +414,23 @@ public class App extends PApplet {
      */
     @Override
     public void mousePressed(MouseEvent e) {
+        switch (currentState) {
+            case MENU:
+                mainMenu.mousePressed(e.getX(), e.getY());
+                break;
+            case LEVEL_SELECT:
+                levelSelect.mousePressed(e.getX(), e.getY());
+                break;
+            case PLAYING:
+                handleGameMousePressed(e);
+                break;
+        }
+    }
+    
+    /**
+     * 处理游戏中的鼠标按下事件
+     */
+    private void handleGameMousePressed(MouseEvent e) {
         // create a new player-drawn line object
         if (e.getButton() == RIGHT) {
             bigPointList.clear();
@@ -378,9 +445,10 @@ public class App extends PApplet {
      */
     @Override
     public void mouseDragged(MouseEvent e) {
-        PVector pv = new PVector(e.getX(), e.getY());
-        smallPointList.add(pv);
-
+        if (currentState == GameState.PLAYING) {
+            PVector pv = new PVector(e.getX(), e.getY());
+            smallPointList.add(pv);
+        }
     }
 
     /**
@@ -392,11 +460,11 @@ public class App extends PApplet {
      */
     @Override
     public void mouseReleased(MouseEvent e) {
-        bigPointList.add(new ArrayList<>(smallPointList));
-        // clear the smallPointList and get ready for the next time
-        smallPointList.clear();
-
-
+        if (currentState == GameState.PLAYING) {
+            bigPointList.add(new ArrayList<>(smallPointList));
+            // clear the smallPointList and get ready for the next time
+            smallPointList.clear();
+        }
     }
 
     /**
@@ -404,6 +472,29 @@ public class App extends PApplet {
      */
     @Override
     public void draw() {
+        switch (currentState) {
+            case MENU:
+                mainMenu.draw();
+                break;
+            case LEVEL_SELECT:
+                levelSelect.draw();
+                break;
+            case PLAYING:
+                drawGame();
+                break;
+            case PAUSED:
+                drawGame();
+                break;
+            case GAME_OVER:
+                drawGameOver();
+                break;
+        }
+    }
+    
+    /**
+     * 绘制游戏界面
+     */
+    private void drawGame() {
         // if not paused, or the game is not ended, increase the frame count
         if (!isPaused && !(allKindBallsInHoles() && levelNo == 2)) {
             frameCount++;
@@ -473,6 +564,7 @@ public class App extends PApplet {
                 textSize(20);
                 text("=== ENDED ===", 220, 30);
                 text("PRESS 'R' TO RESTART", 220, 60);
+                text("PRESS 'M' FOR MENU", 220, 90);
                 if (!finalScored) {
                     int secondsLeft = level.getInt("time") - (frameCount / FPS);
                     scoreList.set(levelNo, (int)((float)secondsLeft / 0.067f) + scoreList.get(levelNo));
@@ -582,6 +674,21 @@ public class App extends PApplet {
                 }
             }
         }
+    }
+    
+    /**
+     * 绘制游戏结束界面
+     */
+    private void drawGameOver() {
+        background(0);
+        fill(255);
+        textAlign(CENTER);
+        textSize(32);
+        text("游戏结束", WIDTH / 2, HEIGHT / 2 - 50);
+        textSize(20);
+        text("最终得分: " + getTotalScore(), WIDTH / 2, HEIGHT / 2);
+        text("按 'R' 重新开始", WIDTH / 2, HEIGHT / 2 + 30);
+        text("按 'M' 返回主菜单", WIDTH / 2, HEIGHT / 2 + 60);
     }
 
     /**
@@ -708,10 +815,49 @@ public class App extends PApplet {
      */
     public int getTotalScore() {
         int totalScore = 0;
-        for (int i = 0; i < scoreList.size(); i++) {
-            totalScore += scoreList.get(i);
+        for (int score : scoreList) {
+            totalScore += score;
         }
         return totalScore;
+    }
+
+    /**
+     * 设置游戏状态
+     */
+    public void setGameState(GameState state) {
+        this.currentState = state;
+    }
+    
+    /**
+     * 获取当前游戏状态
+     */
+    public GameState getGameState() {
+        return currentState;
+    }
+    
+    /**
+     * 开始指定关卡
+     */
+    public void startLevel(int levelNumber) {
+        this.levelNo = levelNumber;
+        this.currentState = GameState.PLAYING;
+        
+        // 重置游戏状态
+        balls = new ArrayList<>();
+        walls = new ArrayList<>();
+        tiles = new ArrayList<>();
+        holes = new ArrayList<>();
+        alivePoints = new ArrayList<>();
+        smallPointList = new ArrayList<>();
+        bigPointList = new ArrayList<>();
+        accelerators = new ArrayList<>();
+        frameCount = 0;
+        intervalFrameCount = 0;
+        isPaused = false;
+        finalScored = false;
+        
+        // 加载关卡
+        loadLevel();
     }
 
     /**
